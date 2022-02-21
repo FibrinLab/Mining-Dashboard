@@ -324,12 +324,23 @@
 import { findash } from '../../config/pluginInit'
 // import bgImage from '../../assets/images/page-img/45.png'
 import axios from 'axios'
+import UserService from '../../services/user.service'
 // import MorrisChart from '../../components/findash/charts/MorrisChart'
 export default {
   name: 'Dashboard1',
   // components: { MorrisChart },
   mounted () {
-    findash.index()
+    UserService.getUserBoard().then(
+      response => {
+        this.content = findash.index()
+      },
+      error => {
+        this.content =
+          (error.response && error.response.data) ||
+          error.message ||
+          error.toString()
+      }
+    )
   },
   methods: {
     async fetchProfile () {

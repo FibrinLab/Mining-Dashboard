@@ -1,6 +1,6 @@
 <template>
   <ValidationObserver ref="form" v-slot="{ handleSubmit }">
-    <form class="mt-4" novalidate @submit.prevent="handleSubmit(onSubmit)">
+    <form class="mt-4" novalidate @submit.prevent="handleSubmit(handleLogin)">
       <ValidationProvider vid="email" name="E-mail" rules="required|email" v-slot="{ errors }">
         <div class="form-group">
           <label for="emailInput">Email address</label>
@@ -58,50 +58,49 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-
+import User from '../../../../Model/User'
 export default {
-  name: 'SignIn1Form',
-  props: ['formType', 'email', 'password'],
-  data: () => ({
-    user: {
-      email: '',
-      password: ''
+  name: 'Login',
+  data () {
+    return {
+      user: new User('', ''),
+      loading: false,
+      message: ''
     }
-  }),
-  mounted () {
-    this.user.email = this.$props.email
-    this.user.password = this.$props.password
   },
   computed: {
-    ...mapGetters({
-      stateUsers: 'Setting/usersState'
-    })
+    loggedIn () {
+      return this.$store.state.auth.status.loggedIn
+    }
+  },
+  created () {
+    if (this.loggedIn) {
+      this.$router.push('/profile')
+    }
   },
   methods: {
-    onSubmit () {
-      let selectedUser =
-        this.stateUsers.find(user => {
-          return (
-            user.email === this.user.email &&
-            user.password === this.user.password
+    handleLogin () {
+      this.loading = true
+      this.$validator.validateAll().then(isValid => {
+        if (!isValid) {
+          this.loading = false
+          return
+        }
+        if (this.user.username && this.user.password) {
+          this.$store.dispatch('auth/login', this.user).then(
+            () => {
+              this.$router.push('/profile')
+            },
+            error => {
+              this.loading = false
+              this.message =
+                (error.response && error.response.data) ||
+                error.message ||
+                error.toString()
+            }
           )
-        }) || null
-      if (selectedUser) {
-        this.$store.dispatch('Setting/authUserAction', {
-          auth: true,
-          user: {
-            id: selectedUser.uid,
-            name: selectedUser.name,
-            mobileNo: null,
-            email: selectedUser.email,
-            profileImage: null
-          }
-        })
-        localStorage.setItem('user', JSON.stringify(selectedUser))
-        localStorage.setItem('access_token', selectedUser.token)
-        this.$router.push({ name: 'mini.dashboard.home-1' })
-      }
+        }
+      })
     }
   }
 }
